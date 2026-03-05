@@ -1,0 +1,64 @@
+
+# ========================================
+# ACTIVIDAD 4 - BeautifulSoup y Selenium
+# ========================================
+
+from selenium.webdriver import Chrome
+from selenium.webdriver.chrome.service import Service
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
+import pandas as pd
+import time
+import random
+
+# Datos de login en SauceDemo
+USER = "standard_user"
+PASSWORD = "secret_sauce"
+
+def main():
+    # Configurar Chrome
+    service = Service(ChromeDriverManager().install())
+    option = webdriver.ChromeOptions()
+    option.add_argument("--window-size=1920,1080")
+    option.add_argument("--incognito")  # 🔹 Evita alertas de contraseña
+
+    driver = Chrome(service=service, options=option)
+
+    # Abrir página y limpiar cookies
+    driver.get("https://www.saucedemo.com/")
+    driver.delete_all_cookies()
+
+    # Login
+    driver.find_element(By.ID, "user-name").send_keys(USER)
+    driver.find_element(By.ID, "password").send_keys(PASSWORD)
+    driver.find_element(By.ID, "login-button").click()
+
+    # Esperar a que cargue la página
+    time.sleep(3)
+
+    # Extraer nombres y precios
+    nombres = driver.find_elements(By.CLASS_NAME, "inventory_item_name")
+    precios = driver.find_elements(By.CLASS_NAME, "inventory_item_price")
+
+    # Guardar en lista
+    datos_productos = [(n.text, p.text) for n, p in zip(nombres, precios)]
+
+    # 🔹 Mezclar productos para que el CSV sea único
+    random.shuffle(datos_productos)
+
+    driver.quit()  # cerrar navegador
+
+    # Crear DataFrame
+    df = pd.DataFrame(datos_productos, columns=["Producto", "Precio"])
+
+    # Mostrar DataFrame en terminal
+    print("\nDataFrame final:")
+    print(df)
+
+    # Guardar CSV
+    df.to_csv("productos_saucedemo.csv", index=False)
+    print("\nArchivo 'productos_saucedemo.csv' creado ✅")
+
+if __name__ == "__main__":
+    main()
